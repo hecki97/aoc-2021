@@ -13,7 +13,7 @@
 !.editorconfig
 !.eslintignore
 !.eslintrc.js
-!.eslintrc.yaml
+!.eslintrc.json
 !.flake8
 !.gitattributes
 !.github
