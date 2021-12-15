@@ -8,7 +8,8 @@ function solve(drawOrder, boards) {
     if (solved) {
       const unmarkedSum = solved.calculateUnmarked(picks);
 
-      console.log(`The ${solved.id + 1}th board wins after ${picks.length} picks ${picks}`);
+      console.log(`The ${solved.id + 1}th board wins after ${picks.length} picks`);
+      console.log(`[${picks}]`);
       console.log(`${unmarkedSum} * ${pick} = ${unmarkedSum * pick}`);
       return;
     }
