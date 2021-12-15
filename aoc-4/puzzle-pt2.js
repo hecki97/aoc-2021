@@ -48,11 +48,13 @@ function parseData(data) {
       return testRows(this.rows) || testColumns(this.columns);
     },
     calculateUnmarked(picks) {
+      // Reduce all unmarked values into a continuous array
       const unmarked = this.rows.reduce(
         (rv, row) => [...rv, ...row.filter((val) => !picks.includes(val))],
         [],
       );
 
+      // Return the sum of all array elements
       return unmarked.reduce((rv, v) => rv + v, 0);
     },
   });

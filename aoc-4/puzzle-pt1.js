@@ -4,6 +4,7 @@ function solve(drawOrder, boards) {
   const picks = [];
   for (const pick of drawOrder) {
     picks.push(pick);
+    // Filter all boards that have been solved
     const [solved] = boards.filter((board) => board.checkBoard(picks));
     if (solved) {
       const unmarkedSum = solved.calculateUnmarked(picks);
@@ -42,11 +43,13 @@ function parseData(data) {
       return testRows(this.rows) || testColumns(this.columns);
     },
     calculateUnmarked(picks) {
+      // Reduce all unmarked values into a continuous array
       const unmarked = this.rows.reduce(
         (rv, row) => [...rv, ...row.filter((val) => !picks.includes(val))],
         [],
       );
 
+      // Return the sum of all array elements
       return unmarked.reduce((rv, v) => rv + v, 0);
     },
   });
@@ -54,6 +57,7 @@ function parseData(data) {
   const slicedBoards = [];
   const [order, ...boardBlob] = data;
 
+  // Every board is 5x5, so every five rows is one board
   for (let i = 0; i < boardBlob.length; i += 5) {
     slicedBoards.push(boardBlob.slice(i, i + 5));
   }
