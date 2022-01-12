@@ -1,113 +1,43 @@
 const fs = require('fs/promises');
-const { createReadStream, createWriteStream } = require('fs');
-const { Transform } = require('stream');
 
 const INPUT_PATH = './tmp.txt';
 const OUTPUT_PATH = './tmp~2.txt';
 
-function createLanternFish(initialTimer) {
-  return {
-    timer: initialTimer,
-    successor: null,
-    decrease() {
-      this.successor = null;
+async function solve(initialTimers) {
+  await fs.writeFile(INPUT_PATH, initialTimers.map((timer) => `1x${timer}`).join(''));
 
-      if (this.timer === 0) {
-        this.timer = 6;
-        this.successor = createLanternFish(8);
-        return true;
+  for await (const i of Array(5).keys()) {
+    let total = 0;
+    let children = 0;
+
+    const tmp = await fs.readFile(INPUT_PATH, { encoding: 'utf8' });
+    const transformed = tmp.match(/\d+x\d/g).map((v) => {
+      const [count, timer] = v.split('x').map((val) => Number(val));
+      total += count;
+      if (timer === 0) {
+        children += count;
+        return `${count}x6`;
       }
 
-      this.timer -= 1;
-      return false;
-    },
-  };
-}
-
-async function simulateSockets(lanternfish) {
-  const timer = lanternfish.map((fish) => fish.timer);
-  await fs.writeFile(INPUT_PATH, timer.join(''), { encoding: 'binary' });
-
-  for await (const i of Array(156).keys()) {
-    //await new Promise((resolve) => {
-      let count = 0;
-      const batchAppend = [];
-
-      const readStream = createReadStream(INPUT_PATH, { encoding: 'ascii' });
-      const writeStream = createWriteStream(OUTPUT_PATH, { encoding: 'binary' });
-
-      const transform = new Transform({
-        transform(chunk, encoding, callback) {
-          const n = Number(chunk);
-          if (n === 0) {
-            batchAppend.push(8);
-            this.push('6');
-            count += 1;
-          } else {
-            this.push(String(n - 1));
-          }
-
-          count += 1;
-          callback();
-        },
-      });
-
-      readStream
-        .pipe(transform)
-        .pipe(writeStream);
-
-      readStream.on('readable', () => {
-        let chunk;
-        while (null !== (chunk = readStream.read(1))) {
-          const n = Number(chunk);
-          if (n === 0) {
-            batchAppend.push(8);
-            writeStream.write('6');
-            count += 1;
-          } else {
-            writeStream.write(String(n - 1));
-          }
-
-          count += 1;
-        }
-      });
-
-      readStream.on('end', async () => {
-        if ((i + 1) % 10 === 0) {
-          console.log(`After ${i + 101} days there would be ${count} lanternfish`);
-        }
-
-        writeStream.write(batchAppend.join(''));
-
-        readStream.close();
-        writeStream.close();
-
-        await fs.rm(INPUT_PATH);
-        await fs.rename(OUTPUT_PATH, INPUT_PATH);
-        resolve();
-      });
-    //});
-  }
-  console.log();
-}
-
-function solve(initialTimers) {
-  const fishs = initialTimers.map((timer) => createLanternFish(timer));
-  console.log(`Initial state: ${initialTimers}`);
-
-  for (let i = 0; i < 100; i += 1) {
-    fishs.forEach((fish) => {
-      if (fish.decrease()) {
-        fishs.push(fish.successor);
-      }
+      return `${count}x${timer - 1}`;
     });
 
-    if ((i + 1) % 10 === 0) {
-      console.log(`After ${i + 1} days there would be ${fishs.length} lanternfish`);
+    if (children > 0) {
+      transformed.push(`${children}x8`);
+      total += children;
     }
-  }
 
-  simulateSockets(fishs);
+    console.log(tmp);
+    console.log(transformed);
+
+    if ((i + 1) % 10 === 0) {
+      console.log(`After ${i + 1} days there would be ${total} lanternfish`);
+    }
+
+    await fs.writeFile(OUTPUT_PATH, transformed.join(''));
+    await fs.rm(INPUT_PATH);
+    await fs.rename(OUTPUT_PATH, INPUT_PATH);
+  }
 }
 
 async function solveForFile(filename) {
@@ -127,7 +57,7 @@ async function solveForFile(filename) {
 
 async function main() {
   await solveForFile('input-test.txt');
-  //await solveForFile('input.txt');
+  // await solveForFile('input.txt');
 }
 
 main();
