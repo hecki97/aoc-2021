@@ -1,13 +1,12 @@
 const fs = require('fs/promises');
 const { createReadStream, createWriteStream } = require('fs');
-const { Transform } = require('stream');
 
-const INPUT_PATH = './tmp.txt';
-const OUTPUT_PATH = './tmp~2.txt';
+const INPUT_PATH = './tmp';
+const OUTPUT_PATH = './tmp~2';
 
 function createLanternFish(initialTimer) {
   return {
-    timer: initialTimer,
+    timer: Number(initialTimer),
     successor: null,
     decrease() {
       this.successor = null;
@@ -26,49 +25,35 @@ function createLanternFish(initialTimer) {
 
 async function simulateSockets(lanternfish) {
   const timer = lanternfish.map((fish) => fish.timer);
-  await fs.writeFile(INPUT_PATH, timer.join(''), { encoding: 'binary' });
+  await fs.writeFile(INPUT_PATH, new Uint8Array(timer), { encoding: 'binary' });
 
   for await (const i of Array(156).keys()) {
-    //await new Promise((resolve) => {
+    await new Promise((resolve) => {
       let count = 0;
-      const batchAppend = [];
+      const append = [];
 
-      const readStream = createReadStream(INPUT_PATH, { encoding: 'ascii' });
+      const readStream = createReadStream(INPUT_PATH);
       const writeStream = createWriteStream(OUTPUT_PATH, { encoding: 'binary' });
-
-      const transform = new Transform({
-        transform(chunk, encoding, callback) {
-          const n = Number(chunk);
-          if (n === 0) {
-            batchAppend.push(8);
-            this.push('6');
-            count += 1;
-          } else {
-            this.push(String(n - 1));
-          }
-
-          count += 1;
-          callback();
-        },
-      });
-
-      readStream
-        .pipe(transform)
-        .pipe(writeStream);
 
       readStream.on('readable', () => {
         let chunk;
-        while (null !== (chunk = readStream.read(1))) {
-          const n = Number(chunk);
-          if (n === 0) {
-            batchAppend.push(8);
-            writeStream.write('6');
+        const transformed = [];
+
+        while (null !== (chunk = readStream.read(1024))) {
+          for (let i = 0; i < chunk.length; i++) {
+            const n = chunk.readUInt8(i)
+            if (n === 0) {
+              append.push(8);
+              transformed.push(6);
+              count += 1;
+            } else {
+              transformed.push(n - 1);
+            }
+
             count += 1;
-          } else {
-            writeStream.write(String(n - 1));
           }
 
-          count += 1;
+          writeStream.write(new Uint8Array(transformed));
         }
       });
 
@@ -77,7 +62,7 @@ async function simulateSockets(lanternfish) {
           console.log(`After ${i + 101} days there would be ${count} lanternfish`);
         }
 
-        writeStream.write(batchAppend.join(''));
+        writeStream.write(new Uint8Array(append));
 
         readStream.close();
         writeStream.close();
@@ -86,7 +71,7 @@ async function simulateSockets(lanternfish) {
         await fs.rename(OUTPUT_PATH, INPUT_PATH);
         resolve();
       });
-    //});
+    });
   }
   console.log();
 }
@@ -120,7 +105,7 @@ async function solveForFile(filename) {
 
   const empty = /^\s*$/;
   const [line] = data.split(/\r?\n/).filter((v) => !empty.test(v));
-  const initialTimers = line.split(',').map((v) => Number(v));
+  const initialTimers = line.split(',');
 
   solve(initialTimers);
 }
