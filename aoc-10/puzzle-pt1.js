@@ -15,7 +15,7 @@ const SCORE_TABLE = {
 };
 
 function readChar(stack, [char, ...rest]) {
-  if (rest.length > 0) {
+  if (char) {
     if (Object.keys(CHUNK_PAIRS).includes(char)) {
       stack.push(char);
       return readChar(stack, rest);
