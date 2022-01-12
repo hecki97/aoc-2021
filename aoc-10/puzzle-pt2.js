@@ -14,42 +14,39 @@ const SCORE_TABLE = {
   '<': 4,
 };
 
-function readChar(stack, [char, ...rest]) {
-  if (rest.length > 0) {
+function parse(stack, [char, ...rest]) {
+  if (char) {
     if (Object.keys(CHUNK_PAIRS).includes(char)) {
-      stack.push(char);
-      return readChar(stack, rest);
+      stack.unshift(char);
+      return parse(stack, rest);
     }
 
     if (Object.values(CHUNK_PAIRS).includes(char)) {
-      const expected = CHUNK_PAIRS[stack.pop()];
+      const expected = CHUNK_PAIRS[stack.shift()];
       if (expected !== char) {
         console.error(`Expected ${expected}, but found ${char} instead.`);
         return false;
       }
 
-      return readChar(stack, rest);
+      return parse(stack, rest);
     }
 
     throw new Error(`Illegal character ${char} encountered`);
   }
 
-  return true;
+  return stack;
 }
 
 function solve(lines) {
-  const a = lines.reduce((nl, line) => {
-    const stack = [];
-    if (readChar(stack, line)) {
-      nl.push(stack);
-    }
+  const calcLineCompletionScore = (line) => line.reduce((score, token) => score * 5 + SCORE_TABLE[token], 0);
 
-    return nl;
-  }, []);
+  const totalScores = lines
+    .map((line) => parse([], line))
+    .filter((line) => Array.isArray(line))
+    .map((line) => calcLineCompletionScore(line))
+    .sort((a, b) => a - b);
 
-  const total = a.map((line) => line.reduceRight((score, token) => score * 5 + SCORE_TABLE[token], 0));
-
-  console.log(total);
+  console.log(totalScores[Math.floor(totalScores.length / 2)]);
   console.log();
 }
 
@@ -69,7 +66,7 @@ async function solveForFile(filename) {
 
 async function main() {
   await solveForFile('input-test.txt');
-  //await solveForFile('input.txt');
+  await solveForFile('input.txt');
 }
 
 main();
